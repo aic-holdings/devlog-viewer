@@ -1,0 +1,12 @@
+{
+  "name": "devlog-viewer",
+  "version": "1.0.0",
+  "description": "Browse and search devlogs across all Rhea services",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
