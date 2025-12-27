@@ -5,13 +5,20 @@ import path from "path";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const ARGUS_URL = process.env.ARGUS_URL || "https://argus.meetrhea.com";
+const ARGUS_API_KEY = process.env.ARGUS_API_KEY || "";
 const FETCH_TIMEOUT = 10000;
 
 async function fetchWithTimeout(url, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+  const headers = { ...options.headers };
+  if (ARGUS_API_KEY) {
+    headers["X-API-Key"] = ARGUS_API_KEY;
+  }
+
   try {
-    const resp = await fetch(url, { ...options, signal: controller.signal });
+    const resp = await fetch(url, { ...options, headers, signal: controller.signal });
     if (!resp.ok) {
       throw new Error(`Argus returned ${resp.status}`);
     }
