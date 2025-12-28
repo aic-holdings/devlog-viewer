@@ -23,6 +23,16 @@
     .devlog-content { color: #c9d1d9; line-height: 1.6; font-size: 14px; }
     .devlog-content pre { background: #0d1117; padding: 12px; border-radius: 6px; overflow-x: auto; margin: 10px 0; }
     .devlog-content code { font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 13px; }
+    .devlog-content h2, .devlog-content h3, .devlog-content h4 { color: #e6edf3; margin: 12px 0 8px 0; }
+    .devlog-content h2 { font-size: 18px; }
+    .devlog-content h3 { font-size: 16px; }
+    .devlog-content h4 { font-size: 14px; }
+    .devlog-content a { color: #58a6ff; text-decoration: none; }
+    .devlog-content a:hover { text-decoration: underline; }
+    .devlog-content ul { margin: 8px 0; padding-left: 20px; list-style: disc; }
+    .devlog-content li { margin: 4px 0; }
+    .devlog-content em { font-style: italic; }
+    .devlog-content strong { font-weight: 600; }
     .tags { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
     .tag { background: #238636; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 12px; }
     .type-feature { border-left: 4px solid #3fb950; }
@@ -142,12 +152,31 @@
 
     function formatContent(content) {
       if (!content) return "";
-      // Simple markdown-like formatting
+      // Markdown formatting
       return content
+        // Code blocks first (before other processing)
         .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+        // Inline code
         .replace(/`([^`]+)`/g, '<code>$1</code>')
+        // Headers (must be at line start)
+        .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+        .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+        // Bold and italic
+        .replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>')
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-        .replace(/\n/g, '<br>');
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/_([^_]+)_/g, '<em>$1</em>')
+        // Links
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+        // Unordered lists
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        // Line breaks
+        .replace(/\n/g, '<br>')
+        // Wrap consecutive list items
+        .replace(/(<li>.*<\/li>(<br>)?)+/g, '<ul>$&</ul>')
+        .replace(/<br><\/ul>/g, '</ul>')
+        .replace(/<ul><br>/g, '<ul>');
     }
 
     function toggleExpand(id, event) {
