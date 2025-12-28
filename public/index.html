@@ -13,8 +13,9 @@
     select, input { padding: 10px 14px; border-radius: 8px; border: 1px solid #30363d; background: #161b22; color: #e6edf3; font-size: 14px; min-width: 150px; }
     select:focus, input:focus { outline: none; border-color: #58a6ff; }
     input[type="text"] { flex: 1; min-width: 200px; }
-    .devlog { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; margin-bottom: 14px; transition: border-color 0.2s; }
+    .devlog { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; margin-bottom: 14px; transition: border-color 0.2s; cursor: pointer; }
     .devlog:hover { border-color: #58a6ff; }
+    .devlog.expanded { border-color: #58a6ff; background: #1c2128; }
     .devlog-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 12px; flex-wrap: wrap; }
     .devlog-title { color: #58a6ff; font-weight: 600; font-size: 16px; }
     .devlog-meta { color: #8b949e; font-size: 13px; display: flex; gap: 8px; flex-wrap: wrap; }
@@ -78,6 +79,7 @@
     const API = "/api";
     let allDevlogs = [];
     let services = [];
+    let expandedIds = new Set();
 
     function showError(msg) {
       const banner = document.getElementById("error-banner");
@@ -148,6 +150,16 @@
         .replace(/\n/g, '<br>');
     }
 
+    function toggleExpand(id, event) {
+      event.stopPropagation();
+      if (expandedIds.has(id)) {
+        expandedIds.delete(id);
+      } else {
+        expandedIds.add(id);
+      }
+      renderDevlogs();
+    }
+
     function renderDevlogs() {
       const search = document.getElementById("search").value.toLowerCase();
       const filtered = allDevlogs.filter(d =>
@@ -166,10 +178,17 @@
       container.innerHTML = filtered.map(d => {
         const date = new Date(d.created_at).toLocaleString();
         const tags = (d.tags || []).map(t => `<span class="tag">${t}</span>`).join("");
-        const content = formatContent(d.content || "").substring(0, 500);
+        const isExpanded = expandedIds.has(d.id);
+        const rawContent = d.content || "";
+        const needsTruncation = rawContent.length > 300;
+        const displayContent = isExpanded || !needsTruncation
+          ? formatContent(rawContent)
+          : formatContent(rawContent.substring(0, 300));
+        const expandClass = isExpanded ? "expanded" : "";
+        const hint = !isExpanded && needsTruncation ? '<div style="color:#8b949e;font-size:12px;margin-top:8px">Click to expand...</div>' : '';
 
         return `
-          <div class="devlog type-${d.log_type}">
+          <div class="devlog type-${d.log_type} ${expandClass}" onclick="toggleExpand('${d.id}', event)" data-id="${d.id}">
             <div class="devlog-header">
               <span class="devlog-title">${d.title}</span>
               <div class="devlog-meta">
@@ -179,7 +198,8 @@
                 ${d.author ? `<span>${d.author}</span>` : ""}
               </div>
             </div>
-            <div class="devlog-content">${content}${d.content && d.content.length > 500 ? "..." : ""}</div>
+            <div class="devlog-content">${displayContent}${!isExpanded && needsTruncation ? "..." : ""}</div>
+            ${hint}
             ${tags ? `<div class="tags">${tags}</div>` : ""}
           </div>
         `;
