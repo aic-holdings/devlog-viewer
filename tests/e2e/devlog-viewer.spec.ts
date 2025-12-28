@@ -93,4 +93,69 @@ test.describe('Devlog Viewer', () => {
     expect(body.services).toBeDefined();
     expect(Array.isArray(body.services)).toBe(true);
   });
+
+  test('devlog cards are clickable', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForTimeout(2000);
+
+    const devlog = page.locator('.devlog').first();
+    await expect(devlog).toBeVisible();
+
+    // Verify cursor style indicates clickable
+    const cursor = await devlog.evaluate(el => getComputedStyle(el).cursor);
+    expect(cursor).toBe('pointer');
+  });
+
+  test('click-to-expand toggles content', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForTimeout(2000);
+
+    const devlogs = page.locator('.devlog');
+    const count = await devlogs.count();
+
+    // Find a devlog that might have truncated content
+    for (let i = 0; i < Math.min(count, 5); i++) {
+      const devlog = devlogs.nth(i);
+      const hasExpandHint = await devlog.locator('text=Click to expand').isVisible().catch(() => false);
+
+      if (hasExpandHint) {
+        // Click to expand
+        await devlog.click();
+        await page.waitForTimeout(300);
+
+        // Should now have expanded class
+        await expect(devlog).toHaveClass(/expanded/);
+
+        // Click again to collapse
+        await devlog.click();
+        await page.waitForTimeout(300);
+
+        // Should no longer have expanded class
+        const classes = await devlog.getAttribute('class');
+        expect(classes).not.toContain('expanded');
+        break;
+      }
+    }
+  });
+
+  test('expanded devlogs have different styling', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForTimeout(2000);
+
+    const devlog = page.locator('.devlog').first();
+    await expect(devlog).toBeVisible();
+
+    // Get initial background color
+    const initialBg = await devlog.evaluate(el => getComputedStyle(el).backgroundColor);
+
+    // Click to expand
+    await devlog.click();
+    await page.waitForTimeout(300);
+
+    // Get expanded background color
+    const expandedBg = await devlog.evaluate(el => getComputedStyle(el).backgroundColor);
+
+    // Colors should be different when expanded
+    expect(expandedBg).not.toBe(initialBg);
+  });
 });
